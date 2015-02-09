@@ -43,16 +43,20 @@ evolve = function(p = .5, gen = 50, wpp = 1, wpq = 1, wqq = 1){
 	x = evolution(gen, p, q, wpp, wpq, wqq)
 	alleles = x[[1]]
 	genotypes = x[[2]]
+	allelemax = round(max(alleles[50,2:3]), 2)
+	allelemin = round(min(alleles[50,2:3]), 2)
 	#plot(alleles[,1], alleles[,2], col=2, ylim=c(0,1))
 	#points(alleles[,3], col=3)
-	plot1 = ggplot(melt(alleles[,2:3]), aes(x=Var1, y=value, col=Var2))+geom_point()
-	plot2 = ggplot(melt(genotypes[,2:4]), aes(x=Var1, y=value, col=Var2))+geom_point()
-	grid.arrange(plot1, plot2, ncol=2, main=paste("Evolution with fitness",wpp))
+	plot1 = ggplot(melt(alleles[,2:3]), aes(x=Var1, y=value, col=Var2))+ylim(0,1)+geom_point()+ggtitle(paste("Alleles Over Time; Final p=", round(alleles[gen,2],2), "q=", round(alleles[gen,3],2)))
+	plot2 = ggplot(melt(genotypes[,2:4]), aes(x=Var1, y=value, col=Var2))+ylim(0,1)+geom_point()+ggtitle(paste("Genotypes Over Time; Final pp=", round(genotypes[gen,2],2), "pq=", round(genotypes[gen,3],2), "qq=",round(genotypes[gen,4],2)))
+	grid.arrange(plot1, plot2, ncol=2, main=paste("Evolution with fitness: ","pp=",wpp,"; pq=",wpq,"; qq=",wqq, sep=""))
 	#melt(alleles[,2:3])
 }
-fit = 1
-while(fit>0){
-	evolve(p=.5, gen = 50, wpp=fit)
-	fit = fit-.05
-	Sys.sleep(1.5)
+changeFitness = function(){
+	fit = 1
+	while(fit>0){
+		evolve(p=.5, gen = 50, wpp=fit)
+		fit = fit-.05
+		Sys.sleep(1.5)
+	}
 }
