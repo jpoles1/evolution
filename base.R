@@ -14,9 +14,13 @@ alleleFromGenotype = function(pp, pq, qq){
 }
 #Used to calculate the equilibriam frequency at which a given deleterious allele is created and destroyed at equal rates by mutation and selection respectively.
 #Selection coefficient is equal to 1-fitness
-#equilibrium frequency is equal to the sqrt of mutation rate to lethal allele / selection coefficient
+#equilibrium frequency is equal to the sqrt of mutation rate to deleterious allele / selection coefficient
 calculateMutationSelectionBalance = function(mutationRateLethal, fitness){
   sqrt(mutation/(1-fitness))
+}
+#Simulates migration using the fraction of the new population derived from migrant individuals
+migrationByFraction = function(p, q, migrationrate){
+  
 }
 selection = function(p, q, wpp, wpq, wqq){
 	x = genotypeFromAllele(p,q)
@@ -58,7 +62,7 @@ evolve = function(p = .5, gen = 50, wpp = 1, wpq = 1, wqq = 1, pmut=0, qmut=0){
 	allelemax = round(max(alleles[gen,2:3]), 2)
 	allelemin = round(min(alleles[gen,2:3]), 2)
   alleledat = melt(alleles[,2:3])
-  ggplot(alleledat, aes(x=alleledat$Var1, y=alleledat$value, col=alleledat$Var2))+ylim(0,1)+geom_point()+ggtitle(paste("Alleles Over Time; Final p=", round(alleles[gen,2],2), "q=", round(alleles[gen,3],2)))+xlab("Generation #")+ylab("Allele Freq.")+scale_color_discrete(name="Alleles", labels=c("p", "q"))
+	plot1 = ggplot(alleledat, aes(x=alleledat$Var1, y=alleledat$value, col=alleledat$Var2))+ylim(0,1)+geom_point()+ggtitle(paste("Alleles Over Time; Final p=", round(alleles[gen,2],2), "q=", round(alleles[gen,3],2)))+xlab("Generation #")+ylab("Allele Freq.")+scale_color_discrete(name="Alleles", labels=c("p", "q"))
 	plot2 = ggplot(melt(genotypes[,2:4]), aes(x=Var1, y=value, col=Var2))+ylim(0,1)+geom_point()+ggtitle(paste("Genotypes Over Time; Final pp=", round(genotypes[gen,2],2), "pq=", round(genotypes[gen,3],2), "qq=",round(genotypes[gen,4],2)))+xlab("Generation #")+ylab("Genotype Freq.")+scale_color_discrete(name="Genotypes", labels=c("pp", "pq", "qq"))
 	grid.arrange(plot1, plot2, ncol=2, main=paste("Evolution with fitness: ","pp=",wpp,"; pq=",wpq,"; qq=",wqq, "\n and mutation rates p=", pmut, "; q=",qmut, sep=""))
 }
