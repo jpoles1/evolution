@@ -1,3 +1,6 @@
+#TODO
+#Create function that simulates genetic drift through roulette wheel/geneitc selection
+
 library(reshape2)
 library(ggplot2)
 library(gridExtra)
