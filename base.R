@@ -10,6 +10,18 @@ genotypeFromAllele = function(p, q){
 alleleFromGenotype = function(pp, pq, qq){
 	p = (pp) + (.5*pq);
 	q = (qq) + (.5*pq);
+	if((p+q)!=1){
+		print(paste("error, doesn't add to 1", p, q))
+	}
+	c(p, q)
+}
+geneticdrift = function(pop, p, q){
+	if((p+q)==1){
+		
+	}
+	else{
+		print(paste("Errors!", p, q))
+	}
 	c(p, q)
 }
 #Used to calculate the equilibriam frequency at which a given deleterious allele is created and destroyed at equal rates by mutation and selection respectively.
@@ -22,30 +34,39 @@ calculateMutationSelectionBalance = function(mutationRateLethal, fitness){
 migrationByFraction = function(p, q, migrationrate){
   
 }
-selection = function(p, q, wpp, wpq, wqq){
+reproduction = function(p, q, wpp, wpq, wqq, pmut, qmut, pop){
+	#Get Genotypes of Parents
 	x = genotypeFromAllele(p,q)
+	#Select on Parents
 	pp = x[1];pq = x[2];qq = x[3];
 	averagefitness = (pp*wpp)+(pq*wpq)+(qq*wqq)
 	newpp = pp*wpp/averagefitness
 	newpq = pq*wpq/averagefitness
 	newqq = qq*wqq/averagefitness
+	#Calculate allele frequency in gametes
 	y = alleleFromGenotype(newpp, newpq, newqq)
 	p=y[1]; q=y[2];
+	#Perform Mating
+	alleledist = tryCatch({sample(c("p", "q"),pop,rep=TRUE,prob=c(p, q))}, 
+		error = function(e){
+			print(paste("Error", p, q))
+		}
+	)
+	allelefreq = prop.table(table(alleledist))
+	p = as.numeric(allelefreq[1])
+	q = as.numeric(allelefreq[2])
+	#Mutatate offspring
+	p = p-(p*pmut)+(q*qmut);
+	q = q+(p*pmut)-(q*qmut);
 	c(p,q)
 }
-mutate = function(p, q, pmut, qmut){
-	newp = p-(p*pmut)+(q*qmut);
-	newq = q+(p*pmut)-(q*qmut);
-	c(newp,newq)
-}
-evolution = function(gen, p, q, wpp, wpq, wqq, pmut, qmut){
+evolution = function(pop, gen, p, q, wpp, wpq, wqq, pmut, qmut){
 	i = 1;
 	allelehistory = cbind(i, p, q);
 	genohistory = cbind(i, p^2, 2*p*q, q^2);
 	while(i < gen){
-		selectedalleles = selection(p, q, wpp, wpq, wqq);
-		mutatedalleles = mutate(selectedalleles[1], selectedalleles[2], pmut, qmut)
-		p=mutatedalleles[1]; q=mutatedalleles[2]
+		offspring = reproduction(p, q, wpp, wpq, wqq, pmut, qmut, pop);
+		p=offspring[1]; q=offspring[2]
 		allelehistory = rbind(allelehistory, cbind(i,p,q))
 		genohistory = rbind(genohistory, cbind(i, p^2, 2*p*q, q^2))
 		i=i+1;
@@ -54,9 +75,9 @@ evolution = function(gen, p, q, wpp, wpq, wqq, pmut, qmut){
 	colnames(genohistory) = c("generation", "pp", "pq", "qq")
 	list(allelehistory, genohistory)
 }
-evolve = function(p = .5, gen = 50, wpp = 1, wpq = 1, wqq = 1, pmut=0, qmut=0){
+evolve = function(pop=1000, gen = 50, p = .5, wpp = 1, wpq = 1, wqq = 1, pmut=0, qmut=0){
 	q=1-p
-	x = evolution(gen, p, q, wpp, wpq, wqq, pmut, qmut)
+	x = evolution(pop, gen, p, q, wpp, wpq, wqq, pmut, qmut)
 	alleles = x[[1]]
 	genotypes = x[[2]]
 	allelemax = round(max(alleles[gen,2:3]), 2)
