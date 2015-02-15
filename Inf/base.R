@@ -1,66 +1,51 @@
 library(reshape2)
 library(ggplot2)
 library(gridExtra)
-reproduction = function(p, q, wpp, wpq, wqq, pmut, qmut, pop){
-	#Get Genotypes of Parents
+genotypeFromAllele = function(p, q){
+	pp = p^2
+	pq = 2*p*q
+	qq = q^2
+	c(pp, pq, qq)
+}
+alleleFromGenotype = function(pp, pq, qq){
+	p = (pp) + (.5*pq);
+	q = (qq) + (.5*pq);
+	c(p, q)
+}
+#Used to calculate the equilibriam frequency at which a given deleterious allele is created and destroyed at equal rates by mutation and selection respectively.
+#Selection coefficient is equal to 1-fitness
+#equilibrium frequency is equal to the sqrt of mutation rate to deleterious allele / selection coefficient
+calculateMutationSelectionBalance = function(mutationRateLethal, fitness){
+  sqrt(mutation/(1-fitness))
+}
+#Simulates migration using the fraction of the new population derived from migrant individuals
+migrationByFraction = function(p, q, migrationrate){
+  
+}
+selection = function(p, q, wpp, wpq, wqq){
 	x = genotypeFromAllele(p,q)
-	#Select on Parents
 	pp = x[1];pq = x[2];qq = x[3];
 	averagefitness = (pp*wpp)+(pq*wpq)+(qq*wqq)
 	newpp = pp*wpp/averagefitness
 	newpq = pq*wpq/averagefitness
 	newqq = qq*wqq/averagefitness
-	#Calculate allele frequency in gametes
 	y = alleleFromGenotype(newpp, newpq, newqq)
 	p=y[1]; q=y[2];
-	#Perform Mating
-	alleledist = tryCatch({sample(c("p", "q"),pop,rep=TRUE,prob=c(p, q))}, 
-		error = function(e){
-			print(paste("Error", p, q))
-		}
-	)
-	allelefreq = prop.table(table(alleledist))
-	p = as.numeric(allelefreq[1])
-	q = as.numeric(allelefreq[2])
-	#Mutatate offspring
-	p = p-(p*pmut)+(q*qmut);
-	q = q+(p*pmut)-(q*qmut);
 	c(p,q)
 }
-evolution = function(pop, gen, p, q, wpp, wpq, wqq, pmut, qmut){
+mutate = function(p, q, pmut, qmut){
+	newp = p-(p*pmut)+(q*qmut);
+	newq = q+(p*pmut)-(q*qmut);
+	c(newp,newq)
+}
+evolution = function(gen, p, q, wpp, wpq, wqq, pmut, qmut){
 	i = 1;
 	allelehistory = cbind(i, p, q);
 	genohistory = cbind(i, p^2, 2*p*q, q^2);
 	while(i < gen){
-		if((p+q)!=1){
-			print(paste("Alleles do not add to 1!", p+q))
-			q=1-p
-		}
-		#Get Genotypes of Parents
-		genofreq = table(sample(c("pp", "pq", "qq"),pop,rep=TRUE,prob=c(p^2,2*p*q,q^2)))
-		pp = as.numeric(genofreq[1])/pop
-		pq = as.numeric(genofreq[2])/pop
-		qq = as.numeric(genofreq[3])/pop
-		#Select on Parents
-		averagefitness = (pp*wpp)+(pq*wpq)+(qq*wqq)
-		newpp = pp*wpp/averagefitness
-		newpq = pq*wpq/averagefitness
-		newqq = qq*wqq/averagefitness
-		#Calculate allele frequency in gametes
-		p=newpp+(.5*newpq); q=newqq+(.5*newpq);
-		#Perform Mating
-		alleledist = tryCatch({sample(c("p", "q"),pop,rep=TRUE,prob=c(p, q))}, 
-			error = function(e){
-				print(paste("Error", p, q))
-			}
-		)
-		allelefreq = table(alleledist)
-		p = round(as.numeric(allelefreq[1])/pop, 5)
-		q = 1-p
-		#Mutatate offspring
-		#p = p-(p*pmut)+(q*qmut);
-		#q = q+(p*pmut)-(q*qmut);
-		#Add to history
+		selectedalleles = selection(p, q, wpp, wpq, wqq);
+		mutatedalleles = mutate(selectedalleles[1], selectedalleles[2], pmut, qmut)
+		p=mutatedalleles[1]; q=mutatedalleles[2]
 		allelehistory = rbind(allelehistory, cbind(i,p,q))
 		genohistory = rbind(genohistory, cbind(i, p^2, 2*p*q, q^2))
 		i=i+1;
@@ -69,9 +54,9 @@ evolution = function(pop, gen, p, q, wpp, wpq, wqq, pmut, qmut){
 	colnames(genohistory) = c("generation", "pp", "pq", "qq")
 	list(allelehistory, genohistory)
 }
-evolve = function(pop=1000, gen = 50, p = .5, wpp = 1, wpq = 1, wqq = 1, pmut=0, qmut=0){
+evolve = function(p = .5, gen = 50, wpp = 1, wpq = 1, wqq = 1, pmut=0, qmut=0){
 	q=1-p
-	x = evolution(pop, gen, p, q, wpp, wpq, wqq, pmut, qmut)
+	x = evolution(gen, p, q, wpp, wpq, wqq, pmut, qmut)
 	alleles = x[[1]]
 	genotypes = x[[2]]
 	allelemax = round(max(alleles[gen,2:3]), 2)
